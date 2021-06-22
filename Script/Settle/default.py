@@ -273,6 +273,7 @@ def handle_add_social_favorability(
             change_data.target_change.setdefault(target_data.cid, game_type.TargetChange())
             target_change = change_data.target_change[target_data.cid]
             add_favorability = character.calculation_favorability(character_id, target_data.cid, add_time)
+            add_favorability *= 1000
             add_favorability *= target_data.social_contact_data[character_id]
             if add_favorability:
                 character_handle.add_favorability(
@@ -404,7 +405,7 @@ def handle_add_small_sing_experience(
     if character_data.dead:
         return
     character_data.knowledge.setdefault(15, 0)
-    experience = 0.01 * add_time * character_data.knowledge_interest[15]
+    experience = add_time * character_data.knowledge_interest[15]
     character_data.knowledge[15] += experience
     change_data.knowledge.setdefault(15, 0)
     change_data.knowledge[15] += experience
@@ -431,7 +432,7 @@ def handle_add_small_play_music_experience(
     if character_data.dead:
         return
     character_data.knowledge.setdefault(25, 0)
-    experience = 0.01 * add_time * character_data.knowledge_interest[25]
+    experience = add_time * character_data.knowledge_interest[25]
     character_data.knowledge[25] += experience
     change_data.knowledge.setdefault(25, 0)
     change_data.knowledge[25] += experience
@@ -458,7 +459,7 @@ def handle_add_small_eloquence_experience(
     if character_data.dead:
         return
     character_data.knowledge.setdefault(12, 0)
-    experience = 0.01 * add_time * character_data.knowledge_interest[12]
+    experience = add_time * character_data.knowledge_interest[12]
     character_data.knowledge[12] += experience
     change_data.knowledge.setdefault(12, 0)
     change_data.knowledge[12] += experience
@@ -485,7 +486,7 @@ def handle_add_small_perform_experience(
     if character_data.dead:
         return
     character_data.knowledge.setdefault(11, 0)
-    experience = 0.01 * add_time * character_data.knowledge_interest[11]
+    experience = add_time * character_data.knowledge_interest[11]
     character_data.knowledge[11] += experience
     change_data.knowledge.setdefault(11, 0)
     change_data.knowledge[11] += experience
@@ -512,7 +513,7 @@ def handle_add_small_ceremony_experience(
     if character_data.dead:
         return
     character_data.knowledge.setdefault(30, 0)
-    experience = 0.01 * add_time * character_data.knowledge_interest[30]
+    experience = add_time * character_data.knowledge_interest[30]
     character_data.knowledge[30] += experience
     change_data.knowledge.setdefault(30, 0)
     change_data.knowledge[30] += experience
@@ -1036,7 +1037,7 @@ def handle_target_add_small_lust(
         now_lust_multiple = 1 + now_lust / 10
         target_data.knowledge.setdefault(9, 0)
         now_add_lust = (add_time + character_data.knowledge[9]) + now_lust_multiple
-        target_data.status[21] += now_add_lust
+        target_data.status[21] += now_add_lust * 100
         change_data.target_change.setdefault(target_data.cid, game_type.TargetChange())
         target_change: game_type.TargetChange = change_data.target_change[target_data.cid]
         target_change.status.setdefault(21, 0)
