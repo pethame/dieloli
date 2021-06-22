@@ -2,7 +2,7 @@ name: Build and Release Game
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, imba ]
   pull_request:
     branches: [ master ]
 
