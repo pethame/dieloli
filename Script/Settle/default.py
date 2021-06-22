@@ -102,6 +102,7 @@ def handle_add_interaction_favoravility(
         change_data.target_change.setdefault(target_data.cid, game_type.TargetChange())
         target_change = change_data.target_change[target_data.cid]
         add_favorability = character.calculation_favorability(character_id, target_data.cid, add_time)
+        add_favorability *= 1000
         character_handle.add_favorability(
             character_id, target_data.cid, add_favorability, target_change, now_time
         )
@@ -273,7 +274,6 @@ def handle_add_social_favorability(
             change_data.target_change.setdefault(target_data.cid, game_type.TargetChange())
             target_change = change_data.target_change[target_data.cid]
             add_favorability = character.calculation_favorability(character_id, target_data.cid, add_time)
-            add_favorability *= 1000
             add_favorability *= target_data.social_contact_data[character_id]
             if add_favorability:
                 character_handle.add_favorability(
