@@ -540,7 +540,7 @@ def handle_add_small_sex_experience(
     if character_data.dead:
         return
     character_data.knowledge.setdefault(9, 0)
-    experience = 0.01 * add_time * character_data.knowledge_interest[9]
+    experience = add_time * character_data.knowledge_interest[9]
     character_data.knowledge[9] += experience
     change_data.knowledge.setdefault(9, 0)
     change_data.knowledge[9] += experience
@@ -1037,7 +1037,7 @@ def handle_target_add_small_lust(
         now_lust_multiple = 1 + now_lust / 10
         target_data.knowledge.setdefault(9, 0)
         now_add_lust = (add_time + character_data.knowledge[9]) + now_lust_multiple
-        target_data.status[21] += now_add_lust + 1000
+        target_data.status[21] += now_add_lust + 2000
         change_data.target_change.setdefault(target_data.cid, game_type.TargetChange())
         target_change: game_type.TargetChange = change_data.target_change[target_data.cid]
         target_change.status.setdefault(21, 0)
@@ -1108,7 +1108,7 @@ def handle_target_add_small_eloquence_experience(
     target_data: game_type.Character = cache.character_data[character_data.target_character_id]
     if target_data.dead:
         return
-    experience = 0.01 * add_time * target_data.knowledge_interest[12]
+    experience = add_time * target_data.knowledge_interest[12]
     target_data.knowledge.setdefault(12, 0)
     target_data.knowledge[12] += experience
 
