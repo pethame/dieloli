@@ -43,8 +43,7 @@ def handle_premise(premise: int, character_id: int) -> int:
     """
     if premise in constant.handle_premise_data:
         return constant.handle_premise_data[premise](character_id)
-    else:
-        return 0
+    return 0
 
 
 @add_premise(constant.Premise.IN_CAFETERIA)
@@ -417,9 +416,13 @@ def handle_in_sleep_time(character_id: int) -> int:
     int -- 权重
     """
     character_data = cache.character_data[character_id]
-    now_time: datetime.datetime = datetime.datetime.fromtimestamp(character_data.behavior.start_time)
+    now_time: datetime.datetime = datetime.datetime.fromtimestamp(
+        character_data.behavior.start_time, game_time.time_zone
+    )
     if now_time.hour >= 22 or now_time.hour <= 4:
-        return 500
+        if now_time.hour >= 22:
+            return (now_time.hour - 21) * 100
+        return now_time.hour * 100 + 200
     return 0
 
 
@@ -433,7 +436,9 @@ def handle_in_siesta_time(character_id: int) -> int:
     int -- 权重
     """
     character_data = cache.character_data[character_id]
-    now_time: datetime.datetime = datetime.datetime.fromtimestamp(character_data.behavior.start_time)
+    now_time: datetime.datetime = datetime.datetime.fromtimestamp(
+        character_data.behavior.start_time, game_time.time_zone
+    )
     if now_time.hour >= 12 or now_time.hour <= 15:
         return 100
     return 0
@@ -782,8 +787,7 @@ def handle_is_humor_man(character_id: int) -> int:
             value -= nature - 50
         else:
             value += 50 - nature
-    if value < 0:
-        value = 0
+    value = max(value, 0)
     return value
 
 
@@ -837,7 +841,7 @@ def handle_scene_have_other_target(character_id: int) -> int:
     scene_path = map_handle.get_map_system_path_str_for_list(character_data.position)
     scene_data: game_type.Scene = cache.scene_data[scene_path]
     now_weight = (len(scene_data.character_list) - 1) / 10
-    if now_weight > 0 and now_weight < 1:
+    if 0 < now_weight < 1:
         now_weight = 1
     return now_weight
 
@@ -970,7 +974,7 @@ def handle_have_underwear(character_id: int) -> int:
     int -- 权重
     """
     character_data: game_type.Character = cache.character_data[character_id]
-    if 1 in character_data.clothing and len(character_data.clothing[1]):
+    if 1 in character_data.clothing and character_data.clothing[1]:
         return 1
     return 0
 
@@ -985,7 +989,7 @@ def handle_have_underpants(character_id: int) -> int:
     int -- 权重
     """
     character_data: game_type.Character = cache.character_data[character_id]
-    if 7 in character_data.clothing and len(character_data.clothing[7]):
+    if 7 in character_data.clothing and character_data.clothing[7]:
         return 1
     return 0
 
@@ -1000,7 +1004,7 @@ def handle_have_bra(character_id: int) -> int:
     int -- 权重
     """
     character_data: game_type.Character = cache.character_data[character_id]
-    if 6 in character_data.clothing and len(character_data.clothing[6]):
+    if 6 in character_data.clothing and character_data.clothing[6]:
         return 1
     return 0
 
@@ -1015,7 +1019,7 @@ def handle_have_pants(character_id: int) -> int:
     int -- 权重
     """
     character_data: game_type.Character = cache.character_data[character_id]
-    if 2 in character_data.clothing and len(character_data.clothing[2]):
+    if 2 in character_data.clothing and character_data.clothing[2]:
         return 1
     return 0
 
@@ -1030,7 +1034,7 @@ def handle_have_skirt(character_id: int) -> int:
     int -- 权重
     """
     character_data: game_type.Character = cache.character_data[character_id]
-    if 3 in character_data.clothing and len(character_data.clothing[3]):
+    if 3 in character_data.clothing and character_data.clothing[3]:
         return 1
     return 0
 
@@ -1045,7 +1049,7 @@ def handle_have_shoes(character_id: int) -> int:
     int -- 权重
     """
     character_data: game_type.Character = cache.character_data[character_id]
-    if 4 in character_data.clothing and len(character_data.clothing[4]):
+    if 4 in character_data.clothing and character_data.clothing[4]:
         return 1
     return 0
 
@@ -1060,7 +1064,7 @@ def handle_have_socks(character_id: int) -> int:
     int -- 权重
     """
     character_data: game_type.Character = cache.character_data[character_id]
-    if 5 in character_data.clothing and len(character_data.clothing[5]):
+    if 5 in character_data.clothing and character_data.clothing[5]:
         return 1
     return 0
 
@@ -1326,7 +1330,7 @@ def handle_no_beyond_friendship_target(character_id: int) -> int:
         and target_data.social_contact_data[character_id] < 3
     ):
         return 5 - target_data.social_contact_data[character_id]
-    elif character_id not in target_data.social_contact_data:
+    if character_id not in target_data.social_contact_data:
         return 5
     return 0
 
@@ -1395,8 +1399,7 @@ def handle_physical_strenght(character_id: int) -> int:
     character_data: game_type.Character = cache.character_data[character_id]
     now_weight = int((character_data.hit_point_max / 2 - character_data.hit_point) / 5)
     now_weight += int((character_data.mana_point_max / 2 - character_data.mana_point) / 10)
-    if now_weight < 0:
-        now_weight = 0
+    now_weight = max(now_weight, 0)
     return now_weight
 
 
@@ -2082,9 +2085,8 @@ def handle_approaching_class_time(character_id: int) -> int:
             school_id = 2
         for session_id in game_config.config_school_session_data[school_id]:
             session_config = game_config.config_school_session[session_id]
-            if session_config.start_time > now_time_value:
-                if next_time == 0 or session_config.start_time < next_time:
-                    next_time = session_config.start_time
+            if session_config.start_time > now_time_value and next_time == 0 or session_config.start_time < next_time:
+                next_time = session_config.start_time
         if next_time == 0:
             return 0
     if character_id in cache.teacher_school_timetable:
@@ -2093,9 +2095,8 @@ def handle_approaching_class_time(character_id: int) -> int:
         for timetable in timetable_list:
             if timetable.week_day != now_week:
                 continue
-            if timetable.time > now_time_value:
-                if next_time == 0 or timetable.time < next_time:
-                    next_time = timetable.time
+            if timetable.time > now_time_value and next_time == 0 or timetable.time < next_time:
+                next_time = timetable.time
         if next_time == 0:
             return 0
     next_value = int(next_time / 100) * 60 + next_time % 100
@@ -2103,6 +2104,7 @@ def handle_approaching_class_time(character_id: int) -> int:
     add_time = next_value - now_value
     if add_time > 30:
         return 0
+    add_time = max(add_time,1)
     return 3000 / (add_time * 10)
 
 
@@ -2150,9 +2152,9 @@ def handle_teacher_no_in_classroom(character_id: int) -> int:
     if character_data.classroom == "":
         return 1
     classroom: game_type.Scene = cache.scene_data[character_data.classroom]
-    now_time: datetime.datetime = datetime.datetime.fromtimestamp(character_data.behavior.start_time)
-    if now_time is None:
-        now_time = cache.game_time
+    now_time: datetime.datetime = datetime.datetime.fromtimestamp(
+        character_data.behavior.start_time, game_time.time_zone
+    )
     now_week = now_time.weekday()
     school_id, phase = course.get_character_school_phase(character_id)
     now_time_value = now_time.hour * 100 + now_time.minute
@@ -2264,14 +2266,12 @@ def handle_have_students_in_classroom(character_id: int) -> int:
         return 0
     if character_id not in cache.teacher_school_timetable:
         return 0
-    now_time: datetime.datetime = datetime.datetime.fromtimestamp(character_data.behavior.start_time)
-    if now_time is None:
-        now_time = cache.game_time
-    now_week = now_time.weekday()
-    now_time = 0
+    now_date: datetime.datetime = datetime.datetime.fromtimestamp(character_data.behavior.start_time)
+    now_week = now_date.weekday()
     now_classroom = []
+    now_time = 0
     timetable_list: List[game_type.TeacherTimeTable] = cache.teacher_school_timetable[character_id]
-    now_time_value = now_time.hour * 100 + now_time.minute
+    now_time_value = now_date.hour * 100 + now_date.minute
     for timetable in timetable_list:
         if timetable.week_day != now_week:
             continue
@@ -2288,7 +2288,7 @@ def handle_have_students_in_classroom(character_id: int) -> int:
             now_time = timetable.time
             now_classroom = timetable.class_room
             continue
-        elif timetable.end_time >= now_time_value and timetable.end_time < now_time:
+        if timetable.end_time >= now_time_value and timetable.end_time < now_time:
             now_time = timetable.end_time
             now_classroom = timetable.class_room
     now_room_path_str = map_handle.get_map_system_path_str_for_list(now_classroom)
@@ -2467,10 +2467,7 @@ def handle_rich_experience_in_sex(character_id: int) -> int:
     now_exp = 0
     for i in character_data.sex_experience:
         now_exp += character_data.sex_experience[i]
-    now_level = attr_calculation.get_experience_level_weight(now_exp)
-    if now_level > 4:
-        return now_level - 4
-    return 0
+    return attr_calculation.get_experience_level_weight(now_exp)
 
 
 @add_premise(constant.Premise.TARGET_IS_SLEEP)
@@ -2755,3 +2752,68 @@ def handle_is_not_asexual(character_id: int) -> int:
     """
     character_data: game_type.Character = cache.character_data[character_id]
     return character_data.sex != 3
+
+
+@add_premise(constant.Premise.IS_PRIMARY_SCHOOL_STUDENTS)
+def handle_is_primary_school_students(character_id: int) -> int:
+    """
+    校验角色是否是小学生
+    Keyword arguments:
+    character_id -- 角色id
+    Return arguments:
+    int -- 权重
+    """
+    character_data: game_type.Character = cache.character_data[character_id]
+    return character_data.age <= 12
+
+
+@add_premise(constant.Premise.NO_RICH_EXPERIENCE_IN_SEX)
+def handle_no_rich_experience_in_sex(character_id: int) -> int:
+    """
+    校验角色是否性经验不丰富
+    Keyword arguments:
+    character_id -- 角色id
+    Return arguments:
+    int -- 权重
+    """
+    character_data: game_type.Character = cache.character_data[character_id]
+    now_exp = 0
+    for i in character_data.sex_experience:
+        now_exp += character_data.sex_experience[i]
+    return 8 - attr_calculation.get_experience_level_weight(now_exp)
+
+
+@add_premise(constant.Premise.NO_IN_CAFETERIA)
+def handle_no_in_cafeteria(character_id: int) -> int:
+    """
+    校验角色是否未处于取餐区中
+    Keyword arguments:
+    character_id -- 角色id
+    Return arguments:
+    int -- 权重
+    """
+    character_data = cache.character_data[character_id]
+    now_position = character_data.position
+    now_scene_str = map_handle.get_map_system_path_str_for_list(now_position)
+    now_scene_data = cache.scene_data[now_scene_str]
+    if now_scene_data.scene_tag == "Cafeteria":
+        return 0
+    return 1
+
+
+@add_premise(constant.Premise.NO_IN_RESTAURANT)
+def handle_no_in_restaurant(character_id: int) -> int:
+    """
+    校验角色是否未处于就餐区中
+    Keyword arguments:
+    character_id -- 角色id
+    Return arguments:
+    int -- 权重
+    """
+    character_data = cache.character_data[character_id]
+    now_position = character_data.position
+    now_scene_str = map_handle.get_map_system_path_str_for_list(now_position)
+    now_scene_data = cache.scene_data[now_scene_str]
+    if now_scene_data.scene_tag == "Restaurant":
+        return 0
+    return 1

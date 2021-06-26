@@ -17,6 +17,8 @@ all_place_data_path = os.path.join("data", "PlaceData")
 """ 预处理的所有地点数据路径 """
 all_map_data_path = os.path.join("data", "MapData")
 """ 预处理的所有地图数据路径 """
+all_move_time_path = os.path.join("data", "MoveTime")
+""" 预处理的所有场景移动时间数据路径 """
 
 
 def init_map_data():
@@ -26,6 +28,7 @@ def init_map_data():
         and os.path.exists(all_map_data_path)
         and os.path.exists(all_place_data_path)
         and os.path.exists(scene_path_edge_path)
+        and os.path.exists(all_move_time_path)
     ):
         with open(all_scene_data_path, "rb") as all_scene_data_file:
             cache.scene_data = pickle.load(all_scene_data_file)
@@ -33,6 +36,7 @@ def init_map_data():
             cache.map_data = pickle.load(all_map_data_file)
         with open(all_place_data_path, "rb") as all_place_data_file:
             constant.place_data = pickle.load(all_place_data_file)
+        map_handle.scene_move_time = json_handle.load_json(all_move_time_path)
         map_handle.scene_path_edge = json_handle.load_json(scene_path_edge_path)
     else:
         load_dir_now(map_data_path)
@@ -43,6 +47,7 @@ def init_map_data():
         with open(all_place_data_path, "wb") as all_place_data_file:
             pickle.dump(constant.place_data, all_place_data_file)
         map_handle.init_scene_edge_path_data()
+        map_handle.init_move_time_data()
 
 
 def load_dir_now(data_path: str):
@@ -55,33 +60,32 @@ def load_dir_now(data_path: str):
         now_path = os.path.join(data_path, i)
         if os.path.isfile(now_path):
             now_file = i.split(".")
-            if len(now_file) > 1:
-                if now_file[1] == "json":
-                    if now_file[0] == "Scene":
-                        now_scene_data = game_type.Scene()
-                        now_scene_data.scene_path = get_map_system_path_str(
-                            get_map_system_path_for_path(now_path)
-                        )
-                        load_scene_data = json_handle.load_json(now_path)
-                        now_scene_data.scene_name = get_text._(load_scene_data["SceneName"])
-                        now_scene_data.in_door = load_scene_data["InOutDoor"] == "In"
-                        now_scene_data.scene_tag = load_scene_data["SceneTag"]
-                        cache.scene_data[now_scene_data.scene_path] = now_scene_data
-                        constant.place_data.setdefault(now_scene_data.scene_tag, [])
-                        constant.place_data[now_scene_data.scene_tag].append(now_scene_data.scene_path)
-                    elif now_file[0] == "Map":
-                        now_map_data = game_type.Map()
-                        now_map_data.map_path = get_map_system_path_str(
-                            get_map_system_path_for_path(now_path)
-                        )
-                        with open(os.path.join(data_path, "Map"), "r", encoding="utf-8") as now_read_file:
-                            draw_data = now_read_file.read()
-                            now_map_data.map_draw = get_print_map_data(draw_data)
-                        load_map_data = json_handle.load_json(now_path)
-                        now_map_data.map_name = get_text._(load_map_data["MapName"])
-                        now_map_data.path_edge = load_map_data["PathEdge"]
-                        now_map_data.sorted_path = get_sorted_map_path_data(now_map_data.path_edge)
-                        cache.map_data[now_map_data.map_path] = now_map_data
+            if len(now_file) > 1 and now_file[1] == "json":
+                if now_file[0] == "Scene":
+                    now_scene_data = game_type.Scene()
+                    now_scene_data.scene_path = get_map_system_path_str(
+                        get_map_system_path_for_path(now_path)
+                    )
+                    load_scene_data = json_handle.load_json(now_path)
+                    now_scene_data.scene_name = get_text._(load_scene_data["SceneName"])
+                    now_scene_data.in_door = load_scene_data["InOutDoor"] == "In"
+                    now_scene_data.scene_tag = load_scene_data["SceneTag"]
+                    cache.scene_data[now_scene_data.scene_path] = now_scene_data
+                    constant.place_data.setdefault(now_scene_data.scene_tag, [])
+                    constant.place_data[now_scene_data.scene_tag].append(now_scene_data.scene_path)
+                elif now_file[0] == "Map":
+                    now_map_data = game_type.Map()
+                    now_map_data.map_path = get_map_system_path_str(
+                        get_map_system_path_for_path(now_path)
+                    )
+                    with open(os.path.join(data_path, "Map"), "r", encoding="utf-8") as now_read_file:
+                        draw_data = now_read_file.read()
+                        now_map_data.map_draw = get_print_map_data(draw_data)
+                    load_map_data = json_handle.load_json(now_path)
+                    now_map_data.map_name = get_text._(load_map_data["MapName"])
+                    now_map_data.path_edge = load_map_data["PathEdge"]
+                    now_map_data.sorted_path = get_sorted_map_path_data(now_map_data.path_edge)
+                    cache.map_data[now_map_data.map_path] = now_map_data
         else:
             load_dir_now(now_path)
 
@@ -124,7 +128,7 @@ def get_print_map_data(map_draw: str) -> game_type.MapDraw:
     """
     map_y_list = map_draw.split("\n")
     map_draw_data = game_type.MapDraw()
-    for map_x_list_id in range(len(map_y_list)):
+    for map_x_list_id,_unused in enumerate(map_y_list):
         set_map_button = False
         map_x_list = map_y_list[map_x_list_id]
         now_draw_list = game_type.MapDrawLine()
@@ -137,7 +141,7 @@ def get_print_map_data(map_draw: str) -> game_type.MapDraw:
             elif not set_map_button and map_x_list[i : i + 11] == "<mapbutton>":
                 i += 10
                 set_map_button = 1
-                if len(new_x_list):
+                if new_x_list:
                     now_draw = game_type.MapDrawText()
                     now_draw.text = new_x_list
                     now_draw_list.draw_list.append(now_draw)
@@ -155,7 +159,7 @@ def get_print_map_data(map_draw: str) -> game_type.MapDraw:
                 now_cmd = ""
                 i += 11
             i += 1
-        if len(new_x_list):
+        if new_x_list:
             now_draw = game_type.MapDrawText()
             now_draw.text = new_x_list
             now_draw_list.draw_list.append(now_draw)

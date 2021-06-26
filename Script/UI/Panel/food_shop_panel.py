@@ -186,7 +186,7 @@ class BuyFoodByFoodNameDraw:
     """
 
     def __init__(
-        self, text: Tuple[str, UUID], width: int, is_button: bool, num_button: bool, button_id: int
+        self, text: Tuple[str, UUID], width: int, _unused: bool, num_button: bool, button_id: int
     ):
         """初始化绘制对象"""
         self.text: UUID = text[1]
@@ -223,7 +223,7 @@ class BuyFoodByFoodNameDraw:
             thirsty_text = f"{thirsty_text}{round(food_data.feel[28],2)}"
         else:
             thirsty_text = f"{thirsty_text}0.00"
-        price = round(1 + sum(food_data.feel.values()) * food_data.quality, 2)
+        price = round(1 + sum(food_data.feel.values()) * food_data.quality / 100, 2)
         food_name = (
             food_name
             + f" {hunger_text} {thirsty_text} "

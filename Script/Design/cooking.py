@@ -67,7 +67,7 @@ def create_food(
     food_id: str,
     food_quality: int,
     food_weight: int,
-    food_feel={},
+    food_feel=None,
     food_maker="",
     food_recipe=-1,
     cook_type=0,
@@ -85,6 +85,8 @@ def create_food(
     Return arguments:
     Food -- 食物对象
     """
+    if food_feel is None:
+        food_feel = {}
     food = Food()
     food.id = food_id
     food.uid = uuid.uuid4()
@@ -96,7 +98,7 @@ def create_food(
             food_feel_data = game_config.config_food_feel_data[food_id]
             for feel in food_feel_data:
                 food.feel.setdefault(feel, 0)
-                food.feel[feel] += food_feel_data[feel] / 100 * food.weight
+                food.feel[feel] += food_feel_data[feel] * food.weight
         food.cook = food_config.cook
         food.eat = food_config.eat
         food.seasoning = food_config.seasoning
@@ -247,7 +249,7 @@ def init_restaurant_data():
         recipes = cache.recipe_data[recipes_id]
         food_judge = True
         for food_id in recipes.base:
-            if food_id not in cache.restaurant_data or not len(cache.restaurant_data[food_id]):
+            if food_id not in cache.restaurant_data or not cache.restaurant_data[food_id]:
                 food_judge = False
                 break
             food_id_list = list(cache.restaurant_data[food_id].keys())
@@ -257,7 +259,7 @@ def init_restaurant_data():
         if not food_judge:
             continue
         for food_id in recipes.ingredients:
-            if food_id not in cache.restaurant_data or not len(cache.restaurant_data[food_id]):
+            if food_id not in cache.restaurant_data or not cache.restaurant_data[food_id]:
                 food_judge = False
                 break
             food_id_list = list(cache.restaurant_data[food_id].keys())
@@ -267,7 +269,7 @@ def init_restaurant_data():
         if not food_judge:
             continue
         for food_id in recipes.seasoning:
-            if food_id not in cache.restaurant_data or not len(cache.restaurant_data[food_id]):
+            if food_id not in cache.restaurant_data or not cache.restaurant_data[food_id]:
                 food_judge = False
                 break
             food_id_list = list(cache.restaurant_data[food_id].keys())
@@ -341,22 +343,19 @@ def get_character_food_bag_type_list_buy_food_type(character_id: int, food_type:
                     food_name = cache.recipe_data[food_data.recipe].name
                     food_list.setdefault(food_name, set())
                     food_list[food_name].add(food_uid)
-        elif food_type == _("水果"):
-            if food_data.recipe == -1:
+        elif food_type == _("水果") and food_data.recipe == -1:
                 food_config = game_config.config_food[food_data.id]
                 if food_config.fruit:
                     food_name = food_config.name
                     food_list.setdefault(food_name, set())
                     food_list[food_name].add(food_uid)
-        elif food_type == _("食材"):
-            if food_data.recipe == -1:
+        elif food_type == _("食材") and food_data.recipe == -1:
                 food_config = game_config.config_food[food_data.id]
                 if food_config.cook:
                     food_name = food_config.name
                     food_list.setdefault(food_name, set())
                     food_list[food_name].add(food_uid)
-        elif food_type == _("调料"):
-            if food_data.recipe == -1:
+        elif food_type == _("调料") and food_data.recipe == -1:
                 food_config = game_config.config_food[food_data.id]
                 if food_config.seasoning:
                     food_name = food_config.name
@@ -375,7 +374,7 @@ def get_restaurant_food_type_list_buy_food_type(food_type: str) -> Dict[uuid.UUI
     """
     food_list = {}
     for food_id in cache.restaurant_data:
-        if not len(cache.restaurant_data[food_id]):
+        if not cache.restaurant_data[food_id]:
             continue
         if food_type == _("主食"):
             now_food_uid = list(cache.restaurant_data[food_id].keys())[0]

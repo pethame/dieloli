@@ -228,6 +228,8 @@ class WearClothingListPanel:
         """ 绘制宽度 """
         self.handle_panel: panel.ClothingPageHandlePanel = None
         """ 页面控制对象 """
+        self.return_list = []
+        """ 返回的列表 """
         if clothing_type in character_data.clothing:
             clothing_list = character_data.clothing[clothing_type].keys()
             now_list = [(i, clothing_type) for i in clothing_list]
@@ -355,4 +357,9 @@ class ChangeClothingDraw:
         py_cmd.clr_cmd()
         info_draw = ClothingDescribeDraw(self.clothing_data.tem_id, self.width)
         info_draw.draw()
-        cache.character_data[0].put_on[self.clothing_type] = self.clothing_data.uid
+        character_data: game_type.Character = cache.character_data[0]
+        character_data.put_on.setdefault(self.clothing_type, "")
+        if character_data.put_on[self.clothing_type] == self.clothing_data.uid:
+            character_data.put_on[self.clothing_type] = ""
+        else:
+            character_data.put_on[self.clothing_type] = self.clothing_data.uid

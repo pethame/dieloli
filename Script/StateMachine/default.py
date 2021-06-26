@@ -2,7 +2,7 @@ import random
 import datetime
 from typing import List
 from Script.Config import game_config
-from Script.Design import handle_state_machine, character_move, map_handle, course
+from Script.Design import handle_state_machine, character_move, map_handle, course, game_time
 from Script.Core import cache_control, game_type, constant
 
 cache: game_type.Cache = cache_control.cache
@@ -27,7 +27,7 @@ def character_move_to_classroom(character_id: int):
     character_data.state = constant.CharacterStatus.STATUS_MOVE
 
 
-@handle_state_machine.add_state_machine(constant.StateMachine.MOVE_TO_RAND_CAFETERIA)
+@handle_state_machine.add_state_machine(constant.StateMachine.MOVE_TO_NEAREST_CAFETERIA)
 def character_move_to_rand_cafeteria(character_id: int):
     """
     移动至随机取餐区
@@ -35,7 +35,15 @@ def character_move_to_rand_cafeteria(character_id: int):
     character_id -- 角色id
     """
     character_data: game_type.Character = cache.character_data[character_id]
-    to_cafeteria = map_handle.get_map_system_path_for_str(random.choice(constant.place_data["Cafeteria"]))
+    cafeteria_list = constant.place_data["Cafeteria"]
+    now_position_str = map_handle.get_map_system_path_str_for_list(character_data.position)
+    time_dict = {}
+    for cafeteria in cafeteria_list:
+        now_move_time = map_handle.scene_move_time[now_position_str][cafeteria]
+        time_dict.setdefault(now_move_time, [])
+        time_dict[now_move_time].append(cafeteria)
+    min_time = min(time_dict.keys())
+    to_cafeteria = map_handle.get_map_system_path_for_str(random.choice(time_dict[min_time]))
     _, _, move_path, move_time = character_move.character_move(character_id, to_cafeteria)
     character_data.behavior.behavior_id = constant.Behavior.MOVE
     character_data.behavior.move_target = move_path
@@ -53,14 +61,14 @@ def character_buy_rand_food_at_restaurant(character_id: int):
     character_data: game_type.Character = cache.character_data[character_id]
     new_food_list = []
     for food_id in cache.restaurant_data:
-        if not len(cache.restaurant_data[food_id]):
+        if not cache.restaurant_data[food_id]:
             continue
         for food_uid in cache.restaurant_data[food_id]:
             now_food: game_type.Food = cache.restaurant_data[food_id][food_uid]
             if now_food.eat:
                 new_food_list.append(food_id)
             break
-    if not len(new_food_list):
+    if not new_food_list:
         return
     now_food_id = random.choice(new_food_list)
     now_food = cache.restaurant_data[now_food_id][
@@ -70,7 +78,7 @@ def character_buy_rand_food_at_restaurant(character_id: int):
     del cache.restaurant_data[now_food_id][now_food.uid]
 
 
-@handle_state_machine.add_state_machine(constant.StateMachine.MOVE_TO_RAND_RESTAURANT)
+@handle_state_machine.add_state_machine(constant.StateMachine.MOVE_TO_NEAREST_RESTAURANT)
 def character_move_to_rand_restaurant(character_id: int):
     """
     设置角色状态为向随机就餐区移动
@@ -78,7 +86,15 @@ def character_move_to_rand_restaurant(character_id: int):
     character_id -- 角色id
     """
     character_data: game_type.Character = cache.character_data[character_id]
-    to_restaurant = map_handle.get_map_system_path_for_str(random.choice(constant.place_data["Restaurant"]))
+    restaurant_list = constant.place_data["Restaurant"]
+    now_position_str = map_handle.get_map_system_path_str_for_list(character_data.position)
+    time_dict = {}
+    for restaurant in restaurant_list:
+        now_move_time = map_handle.scene_move_time[now_position_str][restaurant]
+        time_dict.setdefault(now_move_time, [])
+        time_dict[now_move_time].append(restaurant)
+    min_time = min(time_dict.keys())
+    to_restaurant = map_handle.get_map_system_path_for_str(random.choice(time_dict[min_time]))
     _, _, move_path, move_time = character_move.character_move(
         character_id,
         to_restaurant,
@@ -351,7 +367,7 @@ def character_touch_head_to_beyond_friendship_target_in_scene(character_id: int)
         for c in character_data.social_contact[i]:
             if c in scene_data.character_list:
                 character_list.append(c)
-    if len(character_list):
+    if character_list:
         target_id = random.choice(character_list)
         character_data.behavior.behavior_id = constant.Behavior.TOUCH_HEAD
         character_data.target_character_id = target_id
@@ -441,7 +457,7 @@ def character_embrace_to_beyond_friendship_target_in_scene(character_id: int):
         for c in character_data.social_contact[i]:
             if c in scene_data.character_list:
                 character_list.append(c)
-    if len(character_list):
+    if character_list:
         target_id = random.choice(character_list)
         character_data.behavior.behavior_id = constant.Behavior.EMBRACE
         character_data.target_character_id = target_id
@@ -465,7 +481,7 @@ def character_kiss_to_like_target_in_scene(character_id: int):
         for c in character_data.social_contact[i]:
             if c in scene_data.character_list:
                 character_list.append(c)
-    if len(character_list):
+    if character_list:
         target_id = random.choice(character_list)
         character_data.behavior.behavior_id = constant.Behavior.KISS
         character_data.target_character_id = target_id
@@ -485,8 +501,8 @@ def character_move_to_like_target_scene(character_id: int):
     for i in {4, 5}:
         character_data.social_contact.setdefault(i, set())
         for c in character_data.social_contact[i]:
-            character_list.append(i)
-    if len(character_list):
+            character_list.append(c)
+    if character_list:
         target_id = random.choice(character_list)
         target_data: game_type.Character = cache.character_data[target_id]
         _, _, move_path, move_time = character_move.character_move(character_id, target_data.position)
@@ -512,7 +528,7 @@ def character_hand_in_hand_to_like_target_in_scene(character_id: int):
         for c in character_data.social_contact[i]:
             if c in scene_data.character_list:
                 character_list.append(c)
-    if len(character_list):
+    if character_list:
         target_id = random.choice(character_list)
         character_data.behavior.behavior_id = constant.Behavior.HAND_IN_HAND
         character_data.target_character_id = target_id
@@ -538,7 +554,7 @@ def character_kiss_to_no_first_kiss_like_target_in_scene(character_id: int):
                 c_data: game_type.Character = cache.character_data[c]
                 if c_data.first_kiss == -1:
                     character_list.append(c)
-    if len(character_list):
+    if character_list:
         target_id = random.choice(character_list)
         character_data.behavior.behavior_id = constant.Behavior.KISS
         character_data.target_character_id = target_id
@@ -561,7 +577,7 @@ def character_move_to_no_first_kiss_like_target_scene(character_id: int):
             c_data: game_type.Character = cache.character_data[c]
             if c_data.first_kiss == -1:
                 character_list.append(i)
-    if len(character_list):
+    if character_list:
         target_id = random.choice(character_list)
         target_data: game_type.Character = cache.character_data[target_id]
         _, _, move_path, move_time = character_move.character_move(character_id, target_data.position)
@@ -581,14 +597,14 @@ def character_buy_rand_drinks_at_restaurant(character_id: int):
     character_data: game_type.Character = cache.character_data[character_id]
     new_food_list = []
     for food_id in cache.restaurant_data:
-        if not len(cache.restaurant_data[food_id]):
+        if not cache.restaurant_data[food_id]:
             continue
         for food_uid in cache.restaurant_data[food_id]:
             now_food: game_type.Food = cache.restaurant_data[food_id][food_uid]
             if now_food.eat and 28 in now_food.feel:
                 new_food_list.append(food_id)
             break
-    if not len(new_food_list):
+    if not new_food_list:
         return
     now_food_id = random.choice(new_food_list)
     now_food = cache.restaurant_data[now_food_id][
@@ -616,7 +632,7 @@ def character_drink_rand_drinks(character_id: int):
                 food_list.append(food_id)
             else:
                 drink_list.append(food_id)
-    if len(drink_list):
+    if drink_list:
         now_list = drink_list
     else:
         now_list = food_list
@@ -636,19 +652,19 @@ def character_attend_class(character_id: int):
     character_data.behavior.behavior_id = constant.Behavior.ATTEND_CLASS
     end_time = 0
     school_id, phase = course.get_character_school_phase(character_id)
-    now_time = datetime.datetime.fromtimestamp(character_data.behavior.start_time)
+    now_time = datetime.datetime.fromtimestamp(character_data.behavior.start_time, game_time.time_zone)
     now_time_value = now_time.hour * 100 + now_time.minute
     now_course_index = 0
     for session_id in game_config.config_school_session_data[school_id]:
         session_config = game_config.config_school_session[session_id]
-        if session_config.start_time <= now_time_value and session_config.end_time >= now_time_value:
+        if session_config.start_time <= now_time_value <= session_config.end_time:
             now_value = int(now_time_value / 100) * 60 + now_time_value % 100
             end_value = int(session_config.end_time / 100) * 60 + session_config.end_time % 100
             end_time = end_value - now_value + 1
             now_course_index = session_config.session
             break
     now_week = now_time.weekday()
-    if not now_course_index:
+    if not now_course_index or now_course_index:
         now_course = random.choice(list(game_config.config_school_phase_course_data[school_id][phase]))
     else:
         now_course = cache.course_time_table_data[school_id][phase][now_week][now_course_index]
@@ -668,7 +684,7 @@ def character_teach_lesson(character_id: int):
     character_data: game_type.Character = cache.character_data[character_id]
     character_data.behavior.behavior_id = constant.Behavior.TEACHING
     end_time = 0
-    now_time = datetime.datetime.fromtimestamp(character_data.behavior.start_time)
+    now_time = datetime.datetime.fromtimestamp(character_data.behavior.start_time, game_time.time_zone)
     now_week = now_time.weekday()
     now_time_value = now_time.hour * 100 + now_time.minute
     timetable_list: List[game_type.TeacherTimeTable] = cache.teacher_school_timetable[character_id]

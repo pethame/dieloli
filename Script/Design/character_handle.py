@@ -25,7 +25,7 @@ def init_character_list():
     初始生成所有npc数据
     """
     init_character_tem()
-    id_list = iter([i + 1 for i in range(len(cache.npc_tem_data))])
+    id_list = iter(i + 1 for i in range(len(cache.npc_tem_data)))
     npc_data_iter = iter(cache.npc_tem_data)
     for now_id, now_npc_data in zip(id_list, npc_data_iter):
         init_character(now_id, now_npc_data)
@@ -136,11 +136,11 @@ def init_random_npc_data() -> list:
     生成所有随机npc的数据模板
     """
     cache.random_npc_list = []
-    for i in range(random_npc_max):
-        create_random_npc(i)
+    for _ in range(random_npc_max):
+        create_random_npc()
 
 
-def create_random_npc(id) -> dict:
+def create_random_npc() -> dict:
     """
     生成随机npc数据模板
     """
@@ -151,7 +151,7 @@ def create_random_npc(id) -> dict:
     random_npc_name = attr_text.get_random_name_for_sex(random_npc_sex)
     random_npc_age_tem = get_rand_npc_age_tem(age_weight_tem)
     fat_tem = get_rand_npc_fat_tem(age_weight_tem)
-    body_fat_tem = get_rand_npc_body_fat_tem(age_weight_tem, fat_tem)
+    body_fat_tem = fat_tem
     random_npc_new_data = game_type.NpcTem()
     random_npc_new_data.Name = random_npc_name
     random_npc_new_data.Sex = random_npc_sex
@@ -217,20 +217,6 @@ def get_rand_npc_sex_experience_tem(age: int, sex: int) -> int:
     age_region = value_handle.get_old_value_for_list(age, age_region_list)
     age_region_data = now_tem_data[age_region]
     return value_handle.get_random_for_weight(age_region_data)
-
-
-body_fat_weight_data = game_config.config_occupation_bodyfat_region_data
-
-
-def get_rand_npc_body_fat_tem(age_judge: str, bmi_tem: int) -> int:
-    """
-    按职业和体重随机生成体脂率模板
-    Keyword arguments:
-    age_judge -- 职业(student:学生,teacher:老师)
-    bmi_tem -- bmi模板
-    """
-    # now_body_fat_data = game_config.config_occupation_bodyfat_region_data[age_judge][bmi_tem]
-    return bmi_tem
 
 
 def get_rand_npc_age_tem(age_judge: str) -> int:
@@ -364,6 +350,25 @@ def add_favorability(
     now_time -- 增加好感的时间戳
     """
     target_data: game_type.Character = cache.character_data[target_id]
+    while 1:
+        if (
+            len(target_data.favorability) > target_data.nature[1]
+            and character_id not in target_data.favorability
+        ):
+            value_dict = dict(zip(target_data.favorability.values(), target_data.favorability.keys()))
+            now_value = min(value_dict.keys())
+            now_key = value_dict[now_value]
+            del target_data.favorability[now_key]
+            if now_key in target_data.social_contact_data:
+                now_social = target_data.social_contact_data[now_key]
+                target_data.social_contact[now_social].remove(now_key)
+                del target_data.social_contact_data[now_key]
+            if now_key in target_data.social_contact_last_cut_down_time:
+                del target_data.social_contact_last_cut_down_time[now_key]
+            if now_key in target_data.social_contact_last_time:
+                del target_data.social_contact_last_time[now_key]
+        else:
+            break
     target_data.favorability.setdefault(character_id, 0)
     if target_change is not None:
         target_change.status.setdefault(12, 0)

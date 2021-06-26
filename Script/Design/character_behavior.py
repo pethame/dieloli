@@ -22,6 +22,7 @@ from Script.Design import (
     cooking,
 )
 from Script.Config import game_config, normal_config
+from Script.UI.Moudle import draw
 
 game_path = game_path_config.game_path
 cache: game_type.Cache = cache_control.cache
@@ -128,11 +129,22 @@ def judge_character_dead(character_id: int):
         return
     character_data.status.setdefault(27, 0)
     character_data.status.setdefault(28, 0)
-    if (
-        character_data.status[27] >= 100
-        or character_data.status[28] >= 100
-        or character_data.hit_point <= 0
-    ):
+    dead_judge = 0
+    while 1:
+        if character_data.status[27] >= 100:
+            dead_judge = 1
+            character_data.cause_of_death = 0
+            break
+        if character_data.status[27] >= 100:
+            dead_judge = 1
+            character_data.cause_of_death = 1
+            break
+        if character_data.hit_point <= 0:
+            dead_judge = 1
+            character_data.cause_of_death = 2
+            break
+        break
+    if dead_judge:
         character_data.dead = 1
         character_data.state = 13
         if character_id not in cache.over_behavior_character:
@@ -175,14 +187,25 @@ def judge_character_status(character_id: int, now_time: int) -> int:
     character_data.status[28] += hunger_time * 0.02
     character_data.last_hunger_time = now_time
     if time_judge:
-        settle_behavior.handle_settle_behavior(character_id, end_time)
-        talk.handle_talk(character_id)
+        settle_draw = settle_behavior.handle_settle_behavior(character_id, end_time)
+        talk_draw = talk.handle_talk(character_id)
+        if talk_draw is not None:
+            talk_draw.draw()
+        if settle_draw is not None:
+            name_draw = draw.NormalDraw()
+            name_draw.text = "\n" + character_data.name + ": "
+            name_draw.width = window_width
+            name_draw.draw()
+            settle_draw.draw()
+            line_feed = draw.NormalDraw()
+            line_feed.text = "\n"
+            line_feed.draw()
         character_data.behavior = game_type.Behavior()
         character_data.state = constant.CharacterStatus.STATUS_ARDER
     if time_judge == 1:
         character_data.behavior.start_time = end_time
         return 0
-    elif time_judge == 2:
+    if time_judge == 2:
         character_data.behavior.start_time = now_time
         return 0
     return 1
@@ -232,6 +255,7 @@ def search_target(
                 premise_judge = premise_data[premise]
             else:
                 premise_judge = handle_premise.handle_premise(premise, character_id)
+                premise_judge = max(premise_judge,0)
                 premise_data[premise] = premise_judge
             if premise_judge:
                 now_weight += premise_judge
@@ -267,7 +291,7 @@ def search_target(
             now_value_weight = value_handle.get_rand_value_for_value_region(now_target_data.keys())
             target_data.setdefault(now_weight, set())
             target_data[now_weight].add(random.choice(list(now_target_data[now_value_weight])))
-    if len(target_data):
+    if target_data:
         value_weight = value_handle.get_rand_value_for_value_region(target_data.keys())
         return random.choice(list(target_data[value_weight])), value_weight, 1
     return "", 0, 0

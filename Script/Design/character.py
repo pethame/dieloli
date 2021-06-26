@@ -11,6 +11,7 @@ from Script.Design import (
     attr_calculation,
     clothing,
     nature,
+    game_time,
 )
 from Script.Config import game_config
 
@@ -36,8 +37,6 @@ def init_attr(character_id: int):
     character_data.measurements = attr_calculation.get_measurements(
         character_data.sex,
         character_data.height.now_height,
-        character_data.weight,
-        character_data.bodyfat,
         character_data.bodyfat_tem,
     )
     character_data.sex_experience = attr_calculation.get_sex_experience(
@@ -157,9 +156,9 @@ def judge_character_in_class_time(character_id: int) -> bool:
     character_data: game_type.Character = cache.character_data[character_id]
     now_time = character_data.behavior.start_time
     if not now_time:
-        now_time = datetime.datetime.fromtimestamp(cache.game_time)
+        now_time = datetime.datetime.fromtimestamp(cache.game_time, game_time.time_zone)
     else:
-        now_time = datetime.datetime.fromtimestamp(now_time)
+        now_time = datetime.datetime.fromtimestamp(now_time, game_time.time_zone)
     now_time_value = now_time.hour * 100 + now_time.minute
     if character_data.age <= 18:
         school_id = 0
@@ -169,7 +168,7 @@ def judge_character_in_class_time(character_id: int) -> bool:
             school_id = 2
         for session_id in game_config.config_school_session_data[school_id]:
             session_config = game_config.config_school_session[session_id]
-            if now_time_value >= session_config.start_time and now_time_value <= session_config.end_time:
+            if session_config.start_time <= now_time_value <= session_config.end_time:
                 return 1
         return 0
     if character_id not in cache.teacher_school_timetable:
@@ -179,6 +178,6 @@ def judge_character_in_class_time(character_id: int) -> bool:
     for timetable in timetable_list:
         if timetable.week_day != now_week:
             continue
-        if timetable.time <= now_time_value and timetable.end_time >= now_time_value:
+        if timetable.time <= now_time_value <= timetable.end_time:
             return 1
     return 0
