@@ -1037,7 +1037,7 @@ def handle_target_add_small_lust(
         now_lust_multiple = 1 + now_lust / 10
         target_data.knowledge.setdefault(9, 0)
         now_add_lust = (add_time + character_data.knowledge[9]) + now_lust_multiple
-        target_data.status[21] += now_add_lust * 100
+        target_data.status[21] += now_add_lust + 1000
         change_data.target_change.setdefault(target_data.cid, game_type.TargetChange())
         target_change: game_type.TargetChange = change_data.target_change[target_data.cid]
         target_change.status.setdefault(21, 0)
